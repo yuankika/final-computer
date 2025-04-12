@@ -1,0 +1,33 @@
+# Go相关
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+*.test
+*.out
+go.work
+
+# 编辑器和IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Node.js相关
+node_modules/
+npm-debug.log
+yarn-debug.log
+yarn-error.log
+.pnpm-debug.log
+
+# Next.js相关
+.next/
+out/
+build
+.vercel
+.env*.local
+
+# 其他
+.DS_Store
+Thumbs.db 

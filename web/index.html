@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ConnectRPC 计算器</title>
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #f5f5f5;
+        }
+        
+        .calculator {
+            background-color: white;
+            border-radius: 10px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            padding: 30px;
+            width: 350px;
+        }
+        
+        h1 {
+            text-align: center;
+            color: #333;
+            margin-top: 0;
+        }
+        
+        .input-group {
+            display: flex;
+            margin-bottom: 20px;
+        }
+        
+        input {
+            width: 120px;
+            padding: 10px;
+            font-size: 16px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+        
+        select {
+            width: 60px;
+            margin: 0 10px;
+            font-size: 16px;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            background-color: white;
+        }
+        
+        button {
+            width: 100%;
+            padding: 12px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            font-size: 16px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+        
+        button:hover {
+            background-color: #45a049;
+        }
+        
+        .result {
+            margin-top: 20px;
+            padding: 15px;
+            border-radius: 4px;
+            text-align: center;
+            font-size: 18px;
+            font-weight: bold;
+        }
+        
+        .result.success {
+            background-color: #e7f5e7;
+            color: #2e7d32;
+        }
+        
+        .result.error {
+            background-color: #ffebee;
+            color: #c62828;
+        }
+        
+        .hidden {
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="calculator">
+        <h1>ConnectRPC 计算器</h1>
+        
+        <div class="input-group">
+            <input type="number" id="number1" placeholder="第一个数字">
+            <select id="operation">
+                <option value="ADD">+</option>
+                <option value="SUBTRACT">-</option>
+                <option value="MULTIPLY">×</option>
+                <option value="DIVIDE">÷</option>
+            </select>
+            <input type="number" id="number2" placeholder="第二个数字">
+        </div>
+        
+        <button id="calculate">计算</button>
+        
+        <div id="resultContainer" class="result hidden"></div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const number1Input = document.getElementById('number1');
+            const number2Input = document.getElementById('number2');
+            const operationSelect = document.getElementById('operation');
+            const calculateButton = document.getElementById('calculate');
+            const resultContainer = document.getElementById('resultContainer');
+            
+            calculateButton.addEventListener('click', async () => {
+                const a = parseFloat(number1Input.value);
+                const b = parseFloat(number2Input.value);
+                const operation = operationSelect.value;
+                
+                if (isNaN(a) || isNaN(b)) {
+                    showError('请输入有效的数字');
+                    return;
+                }
+                
+                try {
+                    const result = await calculateRequest(a, b, operation);
+                    if (result.error) {
+                        showError(result.error);
+                    } else {
+                        showSuccess(`结果: ${result.result}`);
+                    }
+                } catch (error) {
+                    showError(`计算失败: ${error.message}`);
+                }
+            });
+            
+            function showSuccess(message) {
+                resultContainer.textContent = message;
+                resultContainer.className = 'result success';
+                resultContainer.classList.remove('hidden');
+            }
+            
+            function showError(message) {
+                resultContainer.textContent = message;
+                resultContainer.className = 'result error';
+                resultContainer.classList.remove('hidden');
+            }
+            
+            async function calculateRequest(a, b, operation) {
+                // 将操作符映射到枚举值
+                const opMap = {
+                    'ADD': 0,      // 加法
+                    'SUBTRACT': 1, // 减法
+                    'MULTIPLY': 2, // 乘法
+                    'DIVIDE': 3    // 除法
+                };
+                
+                // 构建Connect请求体
+                const requestBody = {
+                    "a": a,
+                    "b": b,
+                    "op": opMap[operation]
+                };
+
+                try {
+                    const response = await fetch('http://localhost:8080/calculator.CalculatorService/Calculate', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Accept': 'application/json',
+                            'Connect-Protocol-Version': '1'
+                        },
+                        body: JSON.stringify(requestBody)
+                    });
+                    
+                    if (!response.ok) {
+                        throw new Error(`服务器错误: ${response.status}`);
+                    }
+                    
+                    const contentType = response.headers.get('Content-Type');
+                    if (contentType && contentType.includes('application/json')) {
+                        const data = await response.json();
+                        
+                        // 处理Connect响应
+                        if (data.error && typeof data.error === 'string') {
+                            return { error: data.error };
+                        } else if (data.code !== undefined) {
+                            return { error: `错误代码: ${data.code}, 消息: ${data.message || '未知错误'}` };
+                        } else {
+                            return { result: data.result || 0 };
+                        }
+                    } else {
+                        throw new Error('服务器返回了非JSON格式的数据');
+                    }
+                } catch (error) {
+                    console.error('API调用失败:', error);
+                    throw error;
+                }
+            }
+        });
+    </script>
+</body>
+</html> 

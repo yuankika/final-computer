@@ -1,0 +1,32 @@
+syntax = "proto3";
+
+package calculator;
+
+option go_package = "calculator/proto;calculatorpb";
+
+// 计算器服务定义
+service CalculatorService {
+  // 执行二元运算
+  rpc Calculate(CalculateRequest) returns (CalculateResponse) {}
+}
+
+// 运算类型枚举
+enum Operation {
+  ADD = 0;      // 加法
+  SUBTRACT = 1; // 减法
+  MULTIPLY = 2; // 乘法
+  DIVIDE = 3;   // 除法
+}
+
+// 计算请求
+message CalculateRequest {
+  double a = 1;        // 第一个操作数
+  double b = 2;        // 第二个操作数
+  Operation op = 3;    // 运算类型
+}
+
+// 计算响应
+message CalculateResponse {
+  double result = 1;   // 计算结果
+  string error = 2;    // 错误信息（如除以零）
+} 
